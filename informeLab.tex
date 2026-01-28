@@ -1,0 +1,325 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PAQUETES DE IDIOMA Y CODIFICACIÓN ---
+\usepackage[spanish, es-tabla]{babel} % 'es-tabla' intenta forzar "Tabla" en lugar de "Cuadro"
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+% --- PAQUETES DE DISEÑO Y GRÁFICOS ---
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{xcolor}
+
+% --- ESTILO DE PÁRRAFO Y LISTAS ---
+\usepackage{parskip}    % Espacio entre párrafos en lugar de sangría
+\usepackage{setspace}   % Control de interlineado
+\onehalfspacing         % Interlineado 1.5 para mejor lectura
+\usepackage{enumitem}   % Personalización de listas
+
+% --- CONFIGURACIÓN GLOBAL DE CÓDIGO (Listings) ---
+% Alineación optimizada para que coincida con el texto
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{white},
+    breaklines=true,
+    frame=single,               % Marco simple
+    framesep=5pt,               % Espacio entre código y marco
+    rulecolor=\color{black!30}, % Color del marco suave
+    numbers=left,               % Números de línea a la izquierda
+    numbersep=10pt,             % Separación de los números
+    numberstyle=\tiny\color{gray},
+    xleftmargin=1.5cm,          % Margen izquierdo para centrar visualmente el bloque
+    framexleftmargin=0.5cm,     % Ajuste del marco respecto al margen
+    captionpos=b,               % Títulos abajo
+    showstringspaces=false,
+    columns=fullflexible,       % Mejora el copiado de espacios
+}
+
+% --- CONFIGURACIÓN DE HIPERVÍNCULOS ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+    pdftitle={Práctica recuperación LDAP Docker},
+}
+
+% =============================================================================
+%                             DATOS DEL DOCUMENTO
+% =============================================================================
+
+\title{\textbf{Práctica recuperación: Despliegue de un Servidor LDAP con Docker}}
+
+\author{
+    \textbf{XiaoLong Ji} \\[0.5cm] 
+    \textit{Administració i manteniment de Sistemes i aplicacions} \\
+    \textit{Universitat de Lleida - Curs 2025-2026}
+}
+
+\date{\today}
+
+% =============================================================================
+%                             CUERPO DEL DOCUMENTO
+% =============================================================================
+
+\begin{document}
+
+\maketitle
+
+% ÍNDICE
+\tableofcontents
+\newpage
+\setcounter{page}{1}
+
+% -----------------------------------------------------------------------------
+\section{Resumen de la Práctica}
+
+Este informe documenta el diseño, despliegue y validación de una infraestructura de autenticación centralizada basada en el protocolo LDAP (\textit{Lightweight Directory Access Protocol}).
+
+El proyecto representa un cambio respecto a la práctica anterior realizadas en \textbf{AWS EC2}, migrando de un modelo \textbf{IaaS} (\textit{Infrastructure as a Service}) basado en máquinas virtuales y configuración manual, a un modelo de \textbf{Microservicios} orquestados mediante \textbf{Docker}. 
+
+El objetivo central ha sido encapsular la lógica de negocio de una autenticación corporativa en contenedores inmutables, garantizando la portabilidad y la persistencia de datos.
+
+% -----------------------------------------------------------------------------
+\section{Comparación y Análisis de Migración (AWS vs Docker)}
+
+\subsection{Despliegue en AWS (Práctica Anterior)}
+En la práctica anterior de AWS, el despliegue se basaba en un enfoque \textbf{imperativo}. Se provisionaban instancias EC2 con Amazon Linux y se ejecutaban scripts secuenciales (Bash) para:
+
+\begin{enumerate}
+    \item Descargar código fuente en C.
+    \item Instalar compiladores (\texttt{gcc}, \texttt{make}) y dependencias del sistema.
+    \item Compilar e instalar OpenLDAP manualmente.
+    \item Configurar \texttt{systemd} para la gestión del servicio.
+\end{enumerate}
+
+\subsection{Despliegue con Docker (Práctica Actual)}
+Para esta práctica, se ha reutilizado el script en Bash diseñado originalmente para el entorno AWS/VM. Durante la fase de análisis del script para generar \texttt{bootstrap.ldif}, se ha identificado con \textbf{problemas de adaptación}:
+
+\begin{itemize}
+    \item \textbf{El Problema:} El script Bash realizaba la instalación desde cero (compilación). Intentar replicar este script línea por línea dentro de un \texttt{Dockerfile} es considerado un \textit{anti-patrón} en Docker. Hubiera resultado en una imagen pesada, tiempos de construcción excesivos y una gestión ineficiente de capas.
+    
+    \item \textbf{Solución aplicada:} En lugar de usar el script para instalar el software, se analizó el script para extraer únicamente la \textbf{lógica de negocio} (elementos como usuarios 'Jordi' y 'Manel', UIDs 4000/4001 y contraseñas hash).
+    
+    \item Se pasó de \textit{construir el software} (AWS) a \textit{configurar una imagen existente} (Docker), aprovechando la imagen \texttt{osixia/openldap} que ya contiene los binarios compilados y optimizados.
+\end{itemize}
+
+% -----------------------------------------------------------------------------
+\section{Estructura de Ficheros}
+
+La solución se diseñó siguiendo el principio de responsabilidad única, separando la infraestructura en tres servicios definidos en \texttt{docker-compose.yml}.
+
+\subsection{Orquestación de Servicios (\texttt{docker-compose.yml})}
+En docker se define la topología de red y volúmenes.
+
+\begin{itemize}
+    \item \textbf{Red (\texttt{ldap-net}):} Se configuró una red tipo \textit{bridge}. Esto permite \textbf{Service Discovery} automático mediante DNS interno. El contenedor LAM puede encontrar al servidor LDAP simplemente resolviendo el hostname \texttt{ldap-server}, sin gestionar direcciones IP.
+    
+    \item \textbf{Servicio LDAP (Backend):}
+    \begin{itemize}
+        \item Expone puertos 389/636.
+        \item Monta volúmenes persistentes (\texttt{ldap\_data}) para \texttt{/var/lib/ldap}. Esto asegura que si el contenedor se destruye, la base de datos MDB sobrevive.
+    \end{itemize}
+    
+    \item \textbf{Servicio LAM (Frontend):}
+    \begin{itemize}
+        \item Versión fijada a \texttt{8.0.1} (buena práctica de poner una versión específica para evitar problemas de compatibilidad).
+        \item Configurado mediante variables de entorno (\texttt{LDAP\_SERVER=ldap-server}) para autoconfigurarse al inicio, evitando la configuración manual vía GUI en cada despliegue.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Datos de usuarios y Persistencia (\texttt{bootstrap.ldif})}
+Para esta práctica, uno de los objetivos del temario es saber manejar un documento LDIF, por eso, se ha creado unos usuarios iniciales mediante este archivo.
+
+\begin{itemize}
+    \item \textbf{Qué es:} Un archivo LDIF (\textit{LDAP Data Interchange Format}) que define el estado inicial del directorio 
+    \item \textbf{Ventajas:} En ente archivo almacena usuarios iniciales con roles e informaciones ya preestablecidas. Esto permite que al iniciar el contenedor, el servicio LDAP ya tenga los datos necesarios sin necesidad de ejecutar comandos adicionales.
+    \item \textbf{Estructura:} El archivo contiene entradas para:
+    \begin{itemize}
+        \item \textbf{Base DN:} Define la raíz del directorio (\texttt{dc=amsa,dc=udl,dc=cat}).
+        \item \textbf{Organizational Units (OU):} Crea unidades organizativas como \texttt{users} y \texttt{groups}.
+        \item \textbf{Usuarios:} Define los usuarios `Jordi' y `Manel' con atributos como \texttt{uidNumber}, \texttt{gidNumber}, \texttt{homeDirectory}, y contraseñas en hash SSHA512.
+        \item \textbf{Grupos:} Crea grupos asociados a los usuarios.
+    \end{itemize}
+    \item \textbf{Diseño:} Se ha convertido el script Bash original (de AWS) a entradas LDIF estáticas.
+    \begin{itemize}
+        \item \textbf{Hash SSHA512:} Para ahorrar pasos se ha reutilizado el hash \texttt{\{SSHA512\}\ldots} (password: 1234) del script original para mantener la consistencia de credenciales sin necesidad de instalar herramientas de generación de hash en el contenedor.
+        \item \textbf{Mapeo de IDs:} Igual que la práctica anterior, se ha asignado los identificadores UID 4000/4001 y GID 5000/5001. Esto es importante para mantener la coherencia en sistemas que integren LDAP con otros servicios (por ejemplo, NFS).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Selección de la Imagen Base}
+
+Para el servicio OpenLDAP en docker, lo primero que hay que hacer es elegir una imagen base adecuada. Se ha evaluado las principales imágenes disponibles y \textbf{oficiales} en Docker Hub:
+
+\begin{itemize}
+    \item \textbf{Bitnami OpenLDAP (\texttt{bitnami/openldap}):} Enfocada en producción y seguridad, con un sistema de archivos no-root estricto. Es muy popular en entornos Kubernetes pero requiere una configuración inicial más rígida.
+    \item \textbf{Osixia OpenLDAP (\texttt{osixia/openldap}):} Diseñada para flexibilidad y despliegue rápido en entornos de desarrollo y pruebas, ideal para esta práctica cuyo objetivo es demostrar los conocimientos básicos de LDAP y docker.
+\end{itemize}
+
+Además, se ha elegido \textbf{Osixia} por las siguientes ventajas técnicas para este entorno de pràctica:
+\begin{enumerate}
+    \item \textbf{Bootstrapping simplificado:} Su mecanismo de inicio permite inyectar datos automáticamente mediante el flag \texttt{--copy-service}, facilitando la carga del archivo \texttt{bootstrap.ldif} sin scripts complejos.
+    \item \textbf{Gestión automática de TLS:} Genera certificados autofirmados automáticamente si no se proporcionan, simplificando la configuración de LDAPS (puerto 636) requerida en esta práctica (usando el enunciado de Lab05/practica3 de referencia).
+    \item \textbf{Verbosidad:} Ofrece logs detallados que facilitan la depuración durante la fase de desarrollo.
+\end{enumerate}
+
+\subsection{Construcción de Imagen Personalizada (\texttt{Dockerfile})}
+Una vez elegido la imagen base, como buena práctica, habría que especificar una versión que se usará, en este caso se ha usado la versión \texttt{v1.5.0} .
+
+\begin{itemize}
+    \item \textbf{Base Image:} \texttt{osixia/openldap:1.5.0} (Se evitó el tag \texttt{:latest} para asegurar estabilidad y reproducibilidad).
+    \item \textbf{Inyección de Configuración:}
+\end{itemize}
+
+% Código fuera de lista para mejor alineación
+\begin{lstlisting}[language=bash, caption=Inyección del bootstrap en Dockerfile]
+COPY bootstrap.ldif /container/service/slapd/assets/config/bootstrap/ldif/50-bootstrap.ldif
+\end{lstlisting}
+
+Esta línea es crítica. Aprovecha los \textit{hooks} de inicio de la imagen base. Al arrancar, el contenedor detecta este archivo y puebla la base de datos automáticamente. Esto elimina la necesidad de ejecutar comandos \texttt{ldapadd} manuales post-despliegue, automatizando el aprovisionamiento.
+
+\begin{itemize}
+    \item \textbf{Variables de Entorno:} Se definieron \texttt{LDAP\_DOMAIN} y \texttt{LDAP\_BASE\_DN} dentro del Dockerfile para "quemar" la configuración de dominio (\texttt{amsa.udl.cat}) en la imagen.
+\end{itemize}
+
+% -----------------------------------------------------------------------------
+\section{Implementación y Validación}
+
+\subsection{Despliegue}
+El despliegue se realizó mediante el comando:
+
+\begin{lstlisting}[language=bash]
+docker-compose up -d --build
+\end{lstlisting}
+
+El flag \texttt{--build} forzó la lectura del \texttt{Dockerfile} local, integrando el archivo \texttt{bootstrap.ldif} en la nueva imagen.
+
+\subsection{Pruebas de Autenticación}
+Se validó el funcionamiento utilizando un contenedor cliente (\texttt{ubuntu}) dentro de la misma red Docker, simulando un entorno de producción donde el cliente y el servidor están aislados de internet pero conectados entre sí.
+
+\begin{itemize}
+
+    \item \textbf{Acceder al contenedor cliente:} \\
+    Se accedió al contenedor cliente Ubuntu para ejecutar comandos LDAP contra el servidor.
+    
+    \begin{lstlisting}[language=bash]
+docker exec -it ldap-client bash
+    \end{lstlisting}
+    
+    \item \textbf{Prueba de Consulta (Search Request):} \\
+    Se verificó la existencia del usuario 'Jordi' definido en el script Bash original.
+    
+    \begin{lstlisting}[language=bash]
+ldapsearch -x -H ldap://ldap-server \
+-b "dc=amsa,dc=udl,dc=cat" \
+-D "cn=admin,dc=amsa,dc=udl,dc=cat" \
+-w adminpassword "(uid=jordi)"
+    \end{lstlisting}
+
+    \begin{figure}[H]
+        \hspace*{1.7cm}
+        \includegraphics[width=0.95\textwidth]{jordi.png}
+        \caption{Captura consulta LDAP Jordi (Datos importados correctamente)}
+        \label{fig:jordi}
+    \end{figure}
+
+    \item \textbf{Prueba de Autenticación (Bind Request):} \\
+    Se verificó la existencia del usuario 'Manel' y su capacidad de autenticación password.
+    
+    \begin{lstlisting}[language=bash]
+ldapwhoami -x \
+-H ldap://ldap-server \
+-D "uid=manel,ou=users,dc=amsa,dc=udl,dc=cat" \
+-w 1234
+    \end{lstlisting}
+
+    \begin{figure}[H]
+        \hspace*{1.7cm}
+        \includegraphics[width=0.95\textwidth]{manel.png}
+        \caption{Captura de autenticación LDAP Manel (Autenticación exitosa)}
+        \label{fig:manel}
+    \end{figure}
+
+    \item \textbf{Resultado:} \\
+    El servidor retornó exitosamente el objeto DN \texttt{uid=jordi,ou=users...} con \texttt{uidNumber: 4000}. Esto confirma que:
+    \begin{enumerate}
+        \item El contenedor levantó correctamente el servicio \texttt{slapd}.
+        \item El proceso de \textit{bootstrapping} leyó e importó el archivo LDIF correctamente.
+        \item La autenticación (Bind) del administrador funcionó.
+        \item El usuario 'jordi' existe con los atributos esperados.
+        \item El usuario 'manel' pudo autenticarse con la contraseña definida (1234).
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Evidencia Gráfica (LAM)}
+Se verificó visualmente la disponibilidad del servicio y la correcta creación de usuarios y grupos a través de la interfaz web LAM en \texttt{localhost:8080}.
+
+% FIGURA 3: LOGIN
+\begin{figure}[H]
+  \centering
+   \includegraphics[width=0.85\textwidth]{image-lam-login-lab.png}
+  \caption{Pantalla de inicio de sesión de LAM (Evidencia de servicio activo)}
+  \label{fig:lam-login}
+\end{figure}
+
+% FIGURA 4: USUARIOS
+\begin{figure}[H]
+  \centering
+   \includegraphics[width=0.85\textwidth]{image-lam-user-lab.png}
+  \caption{Pantalla de gestión de usuarios (Jordi y Manel)}
+  \label{fig:lam-user}
+\end{figure}
+
+% FIGURA 5: GRUPOS
+\begin{figure}[H]
+  \centering
+   \includegraphics[width=0.85\textwidth]{image-lam-groups-lab.png}
+  \caption{Pantalla de gestión de grupos}
+  \label{fig:lam-groups}
+\end{figure}
+
+% -----------------------------------------------------------------------------
+\section{Conclusiones}
+
+La transición de la práctica de AWS a Docker ha demostrado las ventajas del modelo declarativo. A continuación se presenta una comparativa de impacto entre ambos modelos:
+
+\subsection{Tabla Comparativa}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Criterio} & \textbf{Script Bash (Legacy)} & \textbf{Docker (Moderno)} \\ \midrule
+\textbf{Tiempo de Despliegue} & $\sim$20 minutos & $\sim$1 minuto \\
+\textbf{Configuración} & Manual / Imperativa & Automática / Declarativa \\
+\textbf{Gestión SSL} & Manual & Automática \\
+\textbf{Reproducibilidad} & Poco reproducible & Totalmente reproducible \\ \bottomrule
+\end{tabular}
+\caption{Comparativa AWS vs Docker}
+\label{tab:comparativa}
+\end{table}
+
+Además de las mejoras cuantitativas reflejadas en la Tabla \ref{tab:comparativa}, se destacan las siguientes ventajas cualitativas:
+
+\begin{enumerate}
+    \item \textbf{Reducción de Complejidad:} Se eliminaron más de 50 líneas de comandos de instalación del script Bash original, reemplazándolas por 5 líneas en un \texttt{Dockerfile}.
+    \item \textbf{Idempotencia:} A diferencia del script Bash, que podía fallar si se ejecutaba dos veces (intentando crear usuarios ya existentes), el entorno Docker se reinicia siempre en un estado conocido y limpio.
+    \item \textbf{Aislamiento:} Las dependencias de OpenLDAP no contaminan el sistema operativo anfitrión, residiendo únicamente dentro de la imagen del contenedor.
+\end{enumerate}
+
+Este laboratorio confirma la adquisición de competencias en la orquestación de servicios seguros y la capacidad de traducir requisitos de infraestructura tradicional a arquitecturas modernas de contenedores.
+
+\vspace{1cm}
+
+\textbf{Firma:} XiaoLong Ji
+
+\textbf{Repositorio del Proyecto:} \url{https://github.com/xji650/practica-ldap.git}
+
+\end{document}
