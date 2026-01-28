@@ -32,7 +32,7 @@
 *.tdo
 *.fls
 *.fdb_latexmk
-*.gitignore
 
-
+# --- Editor Backups ---
 *.png
+*.tex
