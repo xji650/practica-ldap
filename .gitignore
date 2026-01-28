@@ -33,6 +33,3 @@
 *.fls
 *.fdb_latexmk
 
-# --- Editor Backups ---
-*.png
-*.tex
