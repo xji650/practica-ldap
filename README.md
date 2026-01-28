@@ -1,4 +1,4 @@
-# 📘 README – Infraestructura LDAP con Docker y OpenLDAP
+# README – Infraestructura LDAP con Docker y OpenLDAP
 
 ## Descripción general
 
@@ -105,7 +105,7 @@ Resultado esperado:
 
 ---
 
-## 🌐 Acceso a LDAP Account Manager
+## Acceso a LDAP Account Manager
 
 URL:
 ```
