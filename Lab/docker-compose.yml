@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # -----------------------------------------------------------------
+  # 1. SERVIDOR LDAP (OpenLDAP)
+  # -----------------------------------------------------------------
+  ldap-server:
+    build: .  # Construeix la imatge utilitzant el Dockerfile d'aquesta carpeta
+    container_name: ldap-server
+    command: --copy-service # Necessari per la imatge osixia quan fem build
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - ldap-net
+
+  # -----------------------------------------------------------------
+  # 2. LAM (LDAP Account Manager) - La interfície gràfica
+  # -----------------------------------------------------------------
+  lam:
+    image: ldapaccountmanager/lam:8.0.1
+    container_name: ldap-lam
+    environment:
+      - LAM_LANG=en_US
+      - LDAP_SERVER=ldap-server
+      - LDAP_DOMAIN=amsa.udl.cat
+      - LDAP_BASE_DN=dc=amsa,dc=udl,dc=cat
+      - ADMIN_PASSWORD=adminpassword
+    ports:
+      - "8080:80"
+    depends_on:
+      - ldap-server
+    networks:
+      - ldap-net
+
+  # -----------------------------------------------------------------
+  # 3. CLIENT LDAP (Per fer proves de connexió)
+  # -----------------------------------------------------------------
+  ldap-client:
+    image: ubuntu:22.04
+    container_name: ldap-client
+    command: >
+      bash -c "apt-get update && 
+      apt-get install -y ldap-utils iputils-ping && 
+      tail -f /dev/null"
+    networks:
+      - ldap-net
+
+volumes:
+  ldap_data:
+  ldap_config:
+
+networks:
+  ldap-net:

@@ -1,0 +1,61 @@
+# Estructura Base
+dn: ou=groups,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=system,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalUnit
+ou: system
+
+# Usuari OSProxy
+dn: cn=osproxy,ou=system,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: osproxy
+userPassword: {SSHA512}CBVaUdQC9mVvAi+0O92J3hA+aPdiWUqf4lVr6bGRAUsFJX5aFOEb+1pSsY8PQwW1UKuuCGO2+160HotnfjXIaRKlryVekLnu
+description: OS proxy for resolving UIDs/GIDs
+
+# Grups
+dn: cn=programadors,ou=groups,dc=amsa,dc=udl,dc=cat
+objectClass: posixGroup
+cn: programadors
+gidNumber: 5000
+
+dn: cn=dissenyadors,ou=groups,dc=amsa,dc=udl,dc=cat
+objectClass: posixGroup
+cn: dissenyadors
+gidNumber: 5001
+
+# Usuaris (Jordi y Manel)
+
+# Jordi (UID 4000 - Asignat a grup Programadors 5000)
+dn: uid=jordi,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Jordi
+sn: Mateo
+uid: jordi
+uidNumber: 4000
+gidNumber: 5000
+homeDirectory: /home/jordi
+loginShell: /bin/bash
+userPassword: {SSHA512}CBVaUdQC9mVvAi+0O92J3hA+aPdiWUqf4lVr6bGRAUsFJX5aFOEb+1pSsY8PQwW1UKuuCGO2+160HotnfjXIaRKlryVekLnu
+
+# Manel (UID 4001 - Asignat a grups Dissenyadors 5001)
+dn: uid=manel,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Manel
+sn: Lopez
+uid: manel
+uidNumber: 4001
+gidNumber: 5001
+homeDirectory: /home/manel
+loginShell: /bin/bash
+userPassword: {SSHA512}CBVaUdQC9mVvAi+0O92J3hA+aPdiWUqf4lVr6bGRAUsFJX5aFOEb+1pSsY8PQwW1UKuuCGO2+160HotnfjXIaRKlryVekLnu
