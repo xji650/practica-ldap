@@ -1,0 +1,198 @@
+# -----------------------------------------------------------------------------
+# ESTRUCTURA BÁSICA (Unidades Organizativas)
+# -----------------------------------------------------------------------------
+
+# OU para Grupos
+dn: ou=groups,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalUnit
+ou: groups
+
+# OU para Usuarios
+dn: ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalUnit
+ou: users
+
+# OU para Sistema (Usuarios especiales/técnicos)
+dn: ou=system,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalUnit
+ou: system
+
+# -----------------------------------------------------------------------------
+# USUARIO DE SISTEMA (OSProxy)
+# -----------------------------------------------------------------------------
+dn: cn=osproxy,ou=system,dc=amsa,dc=udl,dc=cat
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: osproxy
+# Contraseña hash (1234)
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+description: OS proxy for resolving UIDs/GIDs
+
+# -----------------------------------------------------------------------------
+# GRUPOS (Roles Académicos)
+# -----------------------------------------------------------------------------
+
+# Grupo Alumnos (GID 5000)
+dn: cn=alumnes,ou=groups,dc=amsa,dc=udl,dc=cat
+objectClass: posixGroup
+cn: alumnes
+gidNumber: 5000
+
+# Grupo Profesores (GID 5001)
+dn: cn=professors,ou=groups,dc=amsa,dc=udl,dc=cat
+objectClass: posixGroup
+cn: professors
+gidNumber: 5001
+
+# Grupo Administradores (GID 5002)
+dn: cn=admins,ou=groups,dc=amsa,dc=udl,dc=cat
+objectClass: posixGroup
+cn: admins
+gidNumber: 5002
+
+# -----------------------------------------------------------------------------
+# USUARIOS (Alumnos)
+# -----------------------------------------------------------------------------
+
+# Alumne 1 (Jordi) - UID 4000
+dn: uid=jordi,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Jordi
+givenName: Jordi
+sn: Esteve
+uid: jordi
+uidNumber: 4000
+gidNumber: 5000
+homeDirectory: /home/jordi
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# Alumne 2 (Marta Vila -> mvila) - UID 4002
+dn: uid=mvila,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Marta
+givenName: Marta
+sn: Vila
+uid: mvila
+uidNumber: 4002
+gidNumber: 5000
+homeDirectory: /home/mvila
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# Alumne 3 (Pol Font -> pfont) - UID 4003
+dn: uid=pfont,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Pol
+givenName: Pol
+sn: Font
+uid: pfont
+uidNumber: 4003
+gidNumber: 5000
+homeDirectory: /home/pfont
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# Alumne 4 (Laia Serra -> lserra) - UID 4004
+dn: uid=lserra,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Laia
+givenName: Laia
+sn: Serra
+uid: lserra
+uidNumber: 4004
+gidNumber: 5000
+homeDirectory: /home/lserra
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# Alumne 5 (David Puig -> dpuig) - UID 4005
+dn: uid=dpuig,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: David
+givenName: David
+sn: Puig
+uid: dpuig
+uidNumber: 4005
+gidNumber: 5000
+homeDirectory: /home/dpuig
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# Alumne 6 (Sara Marti -> smarti) - UID 4006
+dn: uid=smarti,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Sara
+givenName: Sara
+sn: Marti
+uid: smarti
+uidNumber: 4006
+gidNumber: 5000
+homeDirectory: /home/smarti
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# -----------------------------------------------------------------------------
+# USUARIOS (Profesores)
+# -----------------------------------------------------------------------------
+
+# Profesor 1 (Manel) - UID 4001
+dn: uid=manel,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Manel
+givenName: Manu
+sn: Pons
+uid: manel
+uidNumber: 4001
+gidNumber: 5001
+homeDirectory: /home/manel
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# Profesor 2 (Elena Roca -> eroca) - UID 4007
+dn: uid=eroca,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Elena
+givenName: Elena
+sn: Roca
+uid: eroca
+uidNumber: 4007
+gidNumber: 5001
+homeDirectory: /home/eroca
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
+
+# -----------------------------------------------------------------------------
+# USUARIOS (Administradores)
+# -----------------------------------------------------------------------------
+
+# Admin 1 (Sergi Dalmau -> sdalmau) - UID 4008
+dn: uid=sdalmau,ou=users,dc=amsa,dc=udl,dc=cat
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Sergio
+givenName: Sergi
+sn: Dalmau
+uid: sdalmau
+uidNumber: 4008
+gidNumber: 5002
+homeDirectory: /home/sdalmau
+loginShell: /bin/bash
+userPassword: {SSHA512}Az/pp1kBP5hR25skdzyJxRRDEoIqtDJr7mjvaJXQUkwBWeX6COmIfknn6SOz3AlQ7nLpwwLNkFbtuIr2waYV2JqSJYs=
